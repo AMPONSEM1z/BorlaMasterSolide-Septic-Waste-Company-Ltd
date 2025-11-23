@@ -84,7 +84,7 @@ class AuthService {
 
       try {
         final insertedCustomer =
-            await supabase.from('customers').insert(customerData).select();
+            await supabase.from('customers').insert(customerData).select('*').maybeSingle(); // <- Use maybeSingle() here
         print("🟢 CUSTOMER INSERT SUCCESS: $insertedCustomer");
       } catch (e) {
         print("❌ CUSTOMER INSERT ERROR: $e");

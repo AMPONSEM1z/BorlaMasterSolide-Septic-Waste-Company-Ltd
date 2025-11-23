@@ -16,12 +16,12 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
   List<dynamic> bookings = [];
   RealtimeChannel? bookingsChannel;
   final AudioPlayer _audioPlayer = AudioPlayer();
+  String? customerId;
 
   @override
   void initState() {
     super.initState();
     _loadRequests();
-    _subscribeToBookingChanges();
   }
 
   @override
@@ -33,21 +33,52 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
 
   Future<void> _loadRequests() async {
     setState(() => loading = true);
+
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
+    print("LOGGED IN CUSTOMER auth_user_id: ${user.id}");
+
     try {
+      // Resolve the customer.id from auth_user_id
+      final customerResponse = await supabase
+          .from('customers')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single();
+
+      if (customerResponse == null) {
+        print('No customer record found for this user.');
+        setState(() {
+          bookings = [];
+          customerId = null;
+        });
+        return;
+      }
+
+      customerId = customerResponse['id'] as String;
+      print('Resolved customerId: $customerId');
+
+      // Fetch bookings for this customer
       final response = await supabase
           .from('bookings')
           .select(
-              'id, waste_type, pickup_date, region, town, status, companies(company_name)')
-          .eq('customer_id', user.id)
+            'id, waste_type, pickup_date, region, town, status, companies(company_name)',
+          )
+          .eq('customer_id', customerId!)
           .order('created_at', ascending: false);
 
       setState(() => bookings = response);
       debugPrint('✅ Fetched ${response.length} bookings.');
+
+      // Subscribe to realtime updates after customerId is available
+      _subscribeToBookingChanges();
     } catch (e) {
       debugPrint('❌ Error loading bookings: $e');
+      setState(() {
+        bookings = [];
+        customerId = null;
+      });
     } finally {
       setState(() => loading = false);
     }
@@ -114,8 +145,7 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
   }
 
   void _subscribeToBookingChanges() {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
+    if (customerId == null) return;
 
     bookingsChannel = supabase
         .channel('realtime-bookings')
@@ -126,7 +156,7 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
             column: 'customer_id',
-            value: user.id,
+            value: customerId!,
           ),
           callback: (payload) async {
             final updated = payload.newRecord;
@@ -318,7 +348,6 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
                               const SizedBox(height: 14),
                               _buildProgressTimeline(step),
                               const SizedBox(height: 12),
-
                               // Buttons
                               Row(
                                 children: [

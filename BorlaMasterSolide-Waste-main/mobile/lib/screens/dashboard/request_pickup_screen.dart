@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:borlamaster/services/booking_service.dart';
+
 
 class RequestPickupScreen extends StatefulWidget {
   const RequestPickupScreen({super.key});
@@ -169,23 +171,29 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
     try {
       final user = supabase.auth.currentUser;
       if (user == null) throw Exception('User not logged in');
+       // ✅ fetch customer ID
+    final customer = await supabase
+        .from('customers')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .single();
+    final customerId = customer['id'];
 
       String wasteDetail = _selectedWasteType == 'Solid Waste'
           ? '$_solidWasteWeight kg'
           : _septicSize ?? '';
 
-      await supabase.from('bookings').insert({
-        'customer_id': user.id,
-        'waste_type': _selectedWasteType,
-        'waste_detail': wasteDetail,
-        'region': _selectedRegion,
-        'town': _selectedTown,
-        'company_id': _selectedCompany!['id'],
-        'pickup_date': _pickupDate!.toIso8601String(),
-        'status': 'pending_company_accept',
-        'amount_due': _calculatedPrice,
-        'created_at': DateTime.now().toIso8601String(),
-      });
+     await BookingService.createBooking(
+  // customerId: customerId,
+  wasteType: _selectedWasteType!,
+  region: _selectedRegion!,
+  town: _selectedTown!,
+  companyId: _selectedCompany!['id'],
+  pickupDate: _pickupDate!,
+  wasteDetail: wasteDetail,
+  amountDue: _calculatedPrice!,
+);
+
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

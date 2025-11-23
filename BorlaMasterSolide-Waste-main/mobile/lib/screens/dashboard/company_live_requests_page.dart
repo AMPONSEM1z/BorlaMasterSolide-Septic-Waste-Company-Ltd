@@ -14,12 +14,12 @@ class _CompanyLiveRequestsPageState extends State<CompanyLiveRequestsPage> {
   bool loading = true;
   List<dynamic> bookings = [];
   RealtimeChannel? _subscription;
+  String? companyId;
 
   @override
   void initState() {
     super.initState();
-    _loadRequests();
-    _subscribeToLiveRequests();
+    _loadCompanyAndRequests();
   }
 
   @override
@@ -28,35 +28,70 @@ class _CompanyLiveRequestsPageState extends State<CompanyLiveRequestsPage> {
     super.dispose();
   }
 
-  Future<void> _loadRequests() async {
-    setState(() => loading = true);
+  Future<void> _loadCompanyAndRequests() async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
     try {
-      // Fetch bookings and join with profiles table for customer info
+      // Get the company ID for the logged-in user
+      final companyData = await supabase
+          .from('companies')
+          .select('id')
+          .eq('auth_user_id', user.id)
+          .single();
+
+      companyId = companyData['id'] as String?;
+
+      if (companyId == null) {
+        debugPrint('No company found for this user.');
+        return;
+      }
+
+      // Load bookings for this company
+      await _loadRequests();
+
+      // Subscribe to live updates
+      _subscribeToLiveRequests();
+    } catch (e) {
+      debugPrint('Error loading company info or requests: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading company requests: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadRequests() async {
+    if (companyId == null) return;
+
+    setState(() => loading = true);
+
+    try {
       final data = await supabase
           .from('bookings')
           .select(
-              '*, customer:profiles!bookings_customer_fk(id, full_name, phone_number, email)')
-          .eq('company_id', user.id)
+              '*, customer:customers!bookings_customer_fk(id, full_name, phone_number, email)')
+          .eq('company_id', companyId!)
           .eq('status', 'pending_company_accept')
           .order('pickup_date', ascending: true);
 
       setState(() => bookings = data ?? []);
+      debugPrint('✅ Loaded ${bookings.length} live requests.');
     } catch (e) {
       debugPrint('Error fetching live requests: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error fetching live requests: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching live requests: $e')),
+        );
+      }
     } finally {
       setState(() => loading = false);
     }
   }
 
   void _subscribeToLiveRequests() {
-    final user = supabase.auth.currentUser;
-    if (user == null) return;
+    if (companyId == null) return;
 
     _subscription = supabase
         .channel('public:bookings')
@@ -67,7 +102,7 @@ class _CompanyLiveRequestsPageState extends State<CompanyLiveRequestsPage> {
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
             column: 'company_id',
-            value: user.id,
+            value: companyId!,
           ),
           callback: (_) => _loadRequests(),
         )
@@ -80,16 +115,20 @@ class _CompanyLiveRequestsPageState extends State<CompanyLiveRequestsPage> {
           .from('bookings')
           .update({'status': 'pending_customer_payment'}).eq('id', bookingId);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Booking accepted. Awaiting customer payment.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Booking accepted. Awaiting customer payment.')),
+        );
+      }
 
-      _loadRequests();
+      await _loadRequests();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error accepting booking: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error accepting booking: $e')),
+        );
+      }
     }
   }
 
@@ -99,15 +138,19 @@ class _CompanyLiveRequestsPageState extends State<CompanyLiveRequestsPage> {
           .from('bookings')
           .update({'status': 'cancelled'}).eq('id', bookingId);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking rejected.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Booking rejected.')),
+        );
+      }
 
-      _loadRequests();
+      await _loadRequests();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error rejecting booking: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error rejecting booking: $e')),
+        );
+      }
     }
   }
 
