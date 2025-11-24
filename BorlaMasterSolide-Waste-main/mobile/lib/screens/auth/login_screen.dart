@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../services/auth_service.dart';
 import '../dashboard/customer_dashboard.dart';
 import '../dashboard/company_dashboard.dart';
+import '../admin/admin_dashboard.dart'; // create this page
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,27 +25,26 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
+      // Sign in with Supabase
       final res = await AuthService.signInWithEmail(
         email: _email.text.trim(),
         password: _pass.text.trim(),
       );
 
-      setState(() => _loading = false);
-
       if (res != null && res.user != null) {
         final userId = res.user!.id;
+
+        // Fetch profile (customer, company, or admin)
         final profile = await AuthService.getUserProfile(userId);
 
         if (profile == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to fetch profile.')),
-          );
+          setState(() => _error = 'Failed to fetch profile.');
           return;
         }
 
         final role = profile['role'];
 
-        // ✅ Navigate based on user role
+        // Navigate based on role
         if (role == 'customer') {
           Navigator.pushReplacement(
             context,
@@ -55,10 +55,13 @@ class _LoginScreenState extends State<LoginScreen> {
             context,
             MaterialPageRoute(builder: (_) => const CompanyDashboard()),
           );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unknown role. Contact support.')),
+        } else if (role == 'owner') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminDashboard()),
           );
+        } else {
+          setState(() => _error = 'Unknown role. Contact support.');
         }
       } else {
         setState(() => _error = 'Invalid credentials or login failed.');
@@ -79,20 +82,17 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E1E), // dark background
+      backgroundColor: const Color(0xFF1E1E1E),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // 🔴 BorlaMaster Logo Section
+              // Logo
               Column(
                 children: [
-                  Image.asset(
-                    'assets/logo.png', // ✅ place your logo in assets
-                    height: 90,
-                  ),
+                  Image.asset('assets/logo.png', height: 90),
                   const SizedBox(height: 10),
                   const Text(
                     'BORLA MASTER',
@@ -113,7 +113,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 40),
 
-              // ✉️ Email Input
+              // Email
               TextField(
                 controller: _email,
                 style: const TextStyle(color: Colors.white),
@@ -133,7 +133,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 16),
 
-              // 🔒 Password Input
+              // Password
               TextField(
                 controller: _pass,
                 obscureText: true,
@@ -162,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 24),
 
-              // 🚪 Login button
+              // Login button
               _loading
                   ? const CircularProgressIndicator(color: Colors.redAccent)
                   : ElevatedButton(
@@ -186,10 +186,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 16),
 
-              // 🔹 Forgot Password (Phase 1 extra)
+              // Forgot Password
               TextButton(
                 onPressed: () {
-                  // placeholder for password reset
+                  // Add reset password flow if needed
                 },
                 child: const Text(
                   'Forgot Password?',
@@ -199,7 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 10),
 
-              // 🌍 Google login
+              // Google Login
               TextButton.icon(
                 onPressed: _googleLogin,
                 icon: const Icon(Icons.login, color: Colors.white70),
@@ -211,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              // 🧾 Register link
+              // Register link
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

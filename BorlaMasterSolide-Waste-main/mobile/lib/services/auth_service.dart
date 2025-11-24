@@ -32,16 +32,6 @@ class AuthService {
     }
     print("🟢 AUTH DEBUG: User created => ${user.id}");
 
-    // ✅ Check email confirmation status
-    if (user.emailConfirmedAt == null) {
-      print("🟡 Email not confirmed yet. Confirmation email should have been sent by Supabase.");
-      // Optional: Uncomment to force resend email
-      // await supabase.auth.api.resendConfirmationEmail(email);
-      // print("🟡 Confirmation email resent to $email");
-    } else {
-      print("🟢 Email already confirmed at ${user.emailConfirmedAt}");
-    }
-
     // 2️⃣ Upload avatar/logo if provided
     String? uploadedLogoUrl;
     if (avatarPath != null && avatarPath.isNotEmpty) {
@@ -72,8 +62,6 @@ class AuthService {
 
     // 4️⃣ Insert into CUSTOMERS table if role == 'customer'
     if (role == 'customer') {
-      print("🟡 Preparing customer insert…");
-
       final customerData = {
         'auth_user_id': user.id,
         'full_name': fullName,
@@ -84,7 +72,7 @@ class AuthService {
 
       try {
         final insertedCustomer =
-            await supabase.from('customers').insert(customerData).select('*').maybeSingle(); // <- Use maybeSingle() here
+            await supabase.from('customers').insert(customerData).select('*').maybeSingle();
         print("🟢 CUSTOMER INSERT SUCCESS: $insertedCustomer");
       } catch (e) {
         print("❌ CUSTOMER INSERT ERROR: $e");
@@ -94,8 +82,6 @@ class AuthService {
 
     // 5️⃣ Insert into COMPANIES table if role == 'company'
     if (role == 'company') {
-      print("🟡 Preparing company insert…");
-
       List<String> regionsServed = extraData?['regions_served'] is List
           ? List<String>.from(extraData!['regions_served'])
           : [];
@@ -141,22 +127,43 @@ class AuthService {
       password: password,
     );
 
-    // Optional: Check if email is confirmed on sign-in
     if (res.user?.emailConfirmedAt == null) {
-      print("🟡 Warning: User email not confirmed yet. Cannot fully login until confirmed.");
+      print("🟡 Warning: User email not confirmed yet.");
     }
 
     return res;
   }
 
   // ================================================================
-  // ✅ FETCH USER PROFILE
+  // ✅ FETCH USER PROFILE (Customers, Companies, Admin)
   // ================================================================
   static Future<Map<String, dynamic>?> getUserProfile(String userId) async {
-    final res =
-        await supabase.from('profiles').select().eq('id', userId).maybeSingle();
+    // 1️⃣ Check PROFILES table (customers/companies)
+    final profile = await supabase
+        .from('profiles')
+        .select()
+        .eq('id', userId)
+        .maybeSingle();
 
-    return res == null || res.isEmpty ? null : Map<String, dynamic>.from(res);
+    if (profile != null && profile.isNotEmpty) {
+      return Map<String, dynamic>.from(profile);
+    }
+
+    // 2️⃣ Check ADMINS table (owner)
+    final admin = await supabase
+        .from('admins')
+        .select()
+        .eq('auth_user_id', userId)
+        .maybeSingle();
+
+    if (admin != null && admin.isNotEmpty) {
+      final map = Map<String, dynamic>.from(admin);
+      map['role'] = 'owner'; // assign owner role for routing
+      return map;
+    }
+
+    // Not found
+    return null;
   }
 
   // ================================================================
@@ -172,4 +179,4 @@ class AuthService {
   static Future<void> signOut() async {
     await supabase.auth.signOut();
   }
-}  
+}
