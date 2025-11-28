@@ -1,0 +1,59 @@
+name: borlamaster
+description: A Flutter app for waste and septic management — BorlaMaster
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 🧱 UI & Icons
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+
+  # ☁️ Backend & State Management
+  supabase_flutter: ^2.3.4
+  flutter_riverpod: ^2.3.6
+  flutter_dotenv: ^5.1.0
+
+  # 🖼️ Media & Utilities
+  image_picker: ^1.1.1
+  flutter_image_compress: ^2.4.0
+  uuid: ^4.4.0
+  http: ^1.1.0
+
+  # 🧩 Multi-select dropdowns
+  multi_select_flutter: ^4.1.3
+
+  # 📅 Date formatting
+  intl: ^0.18.1
+
+  # 🔊 Sound playback for notifications
+  audioplayers: ^6.1.0
+
+  # 💳 Payment Integration (Paystack)
+  flutter_paystack_plus: ^2.3.0
+
+  fl_chart: ^0.68.0
+
+  data_table_2: ^2.4.0
+
+  csv: ^5.0.0
+
+  share_plus: ^6.0.0 # optional, for share/export
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - .env
+    - assets/logo.png
+    - assets/images/
+    - assets/sounds/ding.mp3
