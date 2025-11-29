@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../payment_page.dart'; // <-- adjust path if needed
 
 class LiveRequestsPage extends StatefulWidget {
   const LiveRequestsPage({super.key});
@@ -54,7 +55,7 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
       final response = await supabase
           .from('bookings')
           .select(
-            'id, waste_type, pickup_date, region, town, status, companies(company_name)',
+            'id, waste_type, pickup_date, region, town, status, companies(company_name), amount_due',
           )
           .eq('customer_id', customerId!)
           .order('created_at', ascending: false);
@@ -172,7 +173,7 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
                 ),
               );
             }
-                      await _loadRequests();
+            await _loadRequests();
           },
         )
         .subscribe();
@@ -402,13 +403,18 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
                                     Expanded(
                                       child: ElevatedButton.icon(
                                         onPressed: () {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                  'Payment button tapped! (Paystack disabled for testing)'),
-                                              backgroundColor:
-                                                  Colors.orangeAccent,
+                                          // ✅ UPDATED: Navigate to PaymentPage
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => PaymentPage(
+                                                bookingId: r['id'],
+                                                amount_due: double.tryParse(
+                                                        r['amount_due']
+                                                                ?.toString() ??
+                                                            '0') ??
+                                                    0,
+                                              ),
                                             ),
                                           );
                                         },
