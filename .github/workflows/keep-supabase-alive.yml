@@ -1,15 +1,16 @@
-name: Keep Supabase Projects Alive
+name: Keep Supabase Projects Alive with Alerts
 
 on:
   schedule:
-    - cron: "0 * * * *" # every hour
-  workflow_dispatch: # allows manual trigger
+    - cron: "0 0 */5 * *" # At 00:00 UTC every 5th day
+  workflow_dispatch:
 
 jobs:
   keep_alive:
     runs-on: ubuntu-latest
     steps:
       - name: Ping all Supabase projects
+        id: ping
         run: |
           declare -A projects
           projects=(
@@ -20,13 +21,39 @@ jobs:
             ["https://ngfaueanjefzvfguggmu.supabase.co"]="${{ secrets.SUPABASE_KEY_5 }}"
           )
 
+          FAILED=""
+
           for url in "${!projects[@]}"; do
             key="${projects[$url]}"
             if [ -z "$key" ]; then
-              echo "Pinging $url without API key"
-              curl -I -s "$url" > /dev/null
+              status=$(curl -o /dev/null -s -w "%{http_code}" "$url")
             else
-              echo "Pinging $url with API key"
-              curl -I -s -H "apikey: $key" "$url" > /dev/null
+              status=$(curl -o /dev/null -s -w "%{http_code}" -H "apikey: $key" "$url")
+            fi
+
+            if [ "$status" -ge 200 ] && [ "$status" -lt 400 ]; then
+              echo "✅ $url is alive (HTTP $status)"
+            else
+              echo "⚠️ $url might be down (HTTP $status)"
+              FAILED="$FAILED $url (HTTP $status)\n"
             fi
           done
+
+          # Set failed URLs as output for next step
+          echo "failed_urls=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: Send Email if any project failed
+        if: steps.ping.outputs.failed_urls != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "⚠️ Supabase Project Ping Failed"
+          to: allbusiness1z1234@gmail.com
+          from: ${{ secrets.EMAIL_USERNAME }}
+          body: |
+            Some Supabase projects failed to respond during the ping check:
+
+            ${{ steps.ping.outputs.failed_urls }}
