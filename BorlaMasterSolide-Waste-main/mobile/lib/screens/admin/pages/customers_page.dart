@@ -26,19 +26,17 @@ class _CustomersPageState extends State<CustomersPage> {
     setState(() => loading = true);
     try {
       final res = await supabase.from('customers').select();
-      if (res is List) {
-        var list = res.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
-        final queryText = _searchController.text.trim().toLowerCase();
-        if (queryText.isNotEmpty) {
-          list = list.where((c) {
-            final name = (c['full_name'] ?? '').toString().toLowerCase();
-            final email = (c['email'] ?? '').toString().toLowerCase();
-            return name.contains(queryText) || email.contains(queryText);
-          }).toList();
-        }
-        setState(() => customers = list);
+      var list = res.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final queryText = _searchController.text.trim().toLowerCase();
+      if (queryText.isNotEmpty) {
+        list = list.where((c) {
+          final name = (c['full_name'] ?? '').toString().toLowerCase();
+          final email = (c['email'] ?? '').toString().toLowerCase();
+          return name.contains(queryText) || email.contains(queryText);
+        }).toList();
       }
-    } catch (e) {
+      setState(() => customers = list);
+        } catch (e) {
       debugPrint('Error loading customers: $e');
       setState(() => customers = []);
     } finally {
@@ -97,11 +95,11 @@ class _CustomersPageState extends State<CustomersPage> {
 
   Future<void> _openCustomerForm({Map<String, dynamic>? customer}) async {
     final isEditing = customer != null;
-    final _nameController = TextEditingController(text: customer?['full_name']);
-    final _emailController = TextEditingController(text: customer?['email']);
-    final _phoneController = TextEditingController(text: customer?['phone_number']);
-    final _addressController = TextEditingController(text: customer?['address']);
-    final _avatarController = TextEditingController(text: customer?['avatar_url']);
+    final nameController = TextEditingController(text: customer?['full_name']);
+    final emailController = TextEditingController(text: customer?['email']);
+    final phoneController = TextEditingController(text: customer?['phone_number']);
+    final addressController = TextEditingController(text: customer?['address']);
+    final avatarController = TextEditingController(text: customer?['avatar_url']);
     bool saving = false;
 
     await showModalBottomSheet(
@@ -132,31 +130,31 @@ class _CustomersPageState extends State<CustomersPage> {
                       style: const TextStyle(color: Colors.white, fontSize: 20)),
                   const SizedBox(height: 16),
                   TextField(
-                    controller: _nameController,
+                    controller: nameController,
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(labelText: 'Full Name', labelStyle: TextStyle(color: Colors.white70)),
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    controller: _emailController,
+                    controller: emailController,
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(labelText: 'Email', labelStyle: TextStyle(color: Colors.white70)),
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    controller: _phoneController,
+                    controller: phoneController,
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(labelText: 'Phone', labelStyle: TextStyle(color: Colors.white70)),
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    controller: _addressController,
+                    controller: addressController,
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(labelText: 'Address', labelStyle: TextStyle(color: Colors.white70)),
                   ),
                   const SizedBox(height: 12),
                   TextField(
-                    controller: _avatarController,
+                    controller: avatarController,
                     style: const TextStyle(color: Colors.white),
                     decoration: const InputDecoration(labelText: 'Avatar URL', labelStyle: TextStyle(color: Colors.white70)),
                   ),
@@ -169,19 +167,19 @@ class _CustomersPageState extends State<CustomersPage> {
                             try {
                               if (isEditing) {
                                 await supabase.from('customers').update({
-                                  'full_name': _nameController.text,
-                                  'email': _emailController.text,
-                                  'phone_number': _phoneController.text,
-                                  'address': _addressController.text,
-                                  'avatar_url': _avatarController.text,
-                                }).eq('id', customer!['id']);
+                                  'full_name': nameController.text,
+                                  'email': emailController.text,
+                                  'phone_number': phoneController.text,
+                                  'address': addressController.text,
+                                  'avatar_url': avatarController.text,
+                                }).eq('id', customer['id']);
                               } else {
                                 await supabase.from('customers').insert({
-                                  'full_name': _nameController.text,
-                                  'email': _emailController.text,
-                                  'phone_number': _phoneController.text,
-                                  'address': _addressController.text,
-                                  'avatar_url': _avatarController.text,
+                                  'full_name': nameController.text,
+                                  'email': emailController.text,
+                                  'phone_number': phoneController.text,
+                                  'address': addressController.text,
+                                  'avatar_url': avatarController.text,
                                 });
                               }
                               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -269,10 +267,10 @@ class _CustomersPageState extends State<CustomersPage> {
               child: loading
                   ? const Center(child: CircularProgressIndicator(color: Colors.redAccent))
                   : customers.isEmpty
-                      ? Center(
+                      ? const Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
+                            children: [
                               Icon(Icons.person_outline, color: Colors.white24, size: 42),
                               SizedBox(height: 8),
                               Text('No customers found', style: TextStyle(color: Colors.white70)),
@@ -298,7 +296,7 @@ class _CustomersPageState extends State<CustomersPage> {
                                   Switch(
                                     value: active,
                                     onChanged: (_) => _toggleActive(c),
-                                    activeColor: Colors.blueAccent,
+                                    activeThumbColor: Colors.blueAccent,
                                   ),
                                   IconButton(
                                     icon: const Icon(Icons.edit, color: Colors.white70),
@@ -359,7 +357,7 @@ class CustomerDetailsSheet extends StatelessWidget {
               const Spacer(),
               Switch(
                   value: active,
-                  activeColor: Colors.blueAccent,
+                  activeThumbColor: Colors.blueAccent,
                   onChanged: (_) async {
                     final newVal = active ? 'inactive' : 'customer';
                     await supabase.from('customers').update({'role': newVal}).eq('id', customer['id']);

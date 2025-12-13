@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
 final supabaseClient = Supabase.instance.client;
-final _uuid = const Uuid();
+const _uuid = Uuid();
 
 class StorageService {
   /// ✅ Uploads user avatar to Supabase Storage

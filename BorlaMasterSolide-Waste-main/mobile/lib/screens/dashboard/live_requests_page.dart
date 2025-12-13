@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../payment_page.dart'; // <-- adjust path if needed
 
 class LiveRequestsPage extends StatefulWidget {
   const LiveRequestsPage({super.key});
@@ -47,15 +48,6 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
           .eq('auth_user_id', user.id)
           .single();
 
-      if (customerResponse == null) {
-        print('No customer record found for this user.');
-        setState(() {
-          bookings = [];
-          customerId = null;
-        });
-        return;
-      }
-
       customerId = customerResponse['id'] as String;
       print('Resolved customerId: $customerId');
 
@@ -63,7 +55,7 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
       final response = await supabase
           .from('bookings')
           .select(
-            'id, waste_type, pickup_date, region, town, status, companies(company_name)',
+            'id, waste_type, pickup_date, region, town, status, companies(company_name), amount_due',
           )
           .eq('customer_id', customerId!)
           .order('created_at', ascending: false);
@@ -160,28 +152,26 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
           ),
           callback: (payload) async {
             final updated = payload.newRecord;
-            if (updated != null) {
-              final status = updated['status'];
-              final town = updated['town'] ?? 'your area';
-              final waste = updated['waste_type'] ?? 'waste';
+            final status = updated['status'];
+            final town = updated['town'] ?? 'your area';
+            final waste = updated['waste_type'] ?? 'waste';
 
-              await _playNotificationSound();
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '📢 Your $waste booking in $town is now ${status.toString().toUpperCase()}!',
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    backgroundColor: Colors.redAccent,
-                    duration: const Duration(seconds: 3),
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+            await _playNotificationSound();
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '📢 Your $waste booking in $town is now ${status.toString().toUpperCase()}!',
+                    style: const TextStyle(color: Colors.white),
                   ),
-                );
-              }
+                  backgroundColor: Colors.redAccent,
+                  duration: const Duration(seconds: 3),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              );
             }
             await _loadRequests();
           },
@@ -413,13 +403,18 @@ class _LiveRequestsPageState extends State<LiveRequestsPage> {
                                     Expanded(
                                       child: ElevatedButton.icon(
                                         onPressed: () {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                  'Payment button tapped! (Paystack disabled for testing)'),
-                                              backgroundColor:
-                                                  Colors.orangeAccent,
+                                          // ✅ UPDATED: Navigate to PaymentPage
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => PaymentPage(
+                                                bookingId: r['id'],
+                                                amount_due: double.tryParse(
+                                                        r['amount_due']
+                                                                ?.toString() ??
+                                                            '0') ??
+                                                    0,
+                                              ),
                                             ),
                                           );
                                         },

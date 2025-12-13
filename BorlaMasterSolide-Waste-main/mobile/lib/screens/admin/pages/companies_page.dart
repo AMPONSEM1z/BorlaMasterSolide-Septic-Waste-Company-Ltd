@@ -33,11 +33,9 @@ class _CompaniesPageState extends State<CompaniesPage> {
   Future<void> _loadRegions() async {
     try {
       final res = await supabase.from('regions').select('region_name');
-      if (res is List) {
-        final names = res.map<String>((r) => r['region_name'].toString()).toList();
-        setState(() => regions = names);
-      }
-    } catch (e) {
+      final names = res.map<String>((r) => r['region_name'].toString()).toList();
+      setState(() => regions = names);
+        } catch (e) {
       debugPrint('Error loading regions: $e');
     }
   }
@@ -46,30 +44,28 @@ class _CompaniesPageState extends State<CompaniesPage> {
     setState(() => loading = true);
     try {
       final res = await supabase.from('companies').select();
-      if (res is List) {
-        var list = res.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
+      var list = res.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
 
-        // Filter by region
-        if (selectedRegion != null && selectedRegion!.isNotEmpty) {
-          list = list.where((c) {
-            final regionsServed = (c['regions_served'] ?? []) as List<dynamic>;
-            return regionsServed.contains(selectedRegion);
-          }).toList();
-        }
-
-        // Client-side search
-        final queryText = _searchController.text.trim().toLowerCase();
-        if (queryText.isNotEmpty) {
-          list = list.where((c) {
-            final name = (c['company_name'] ?? '').toString().toLowerCase();
-            final email = (c['contact_email'] ?? '').toString().toLowerCase();
-            return name.contains(queryText) || email.contains(queryText);
-          }).toList();
-        }
-
-        setState(() => companies = list);
+      // Filter by region
+      if (selectedRegion != null && selectedRegion!.isNotEmpty) {
+        list = list.where((c) {
+          final regionsServed = (c['regions_served'] ?? []) as List<dynamic>;
+          return regionsServed.contains(selectedRegion);
+        }).toList();
       }
-    } catch (e) {
+
+      // Client-side search
+      final queryText = _searchController.text.trim().toLowerCase();
+      if (queryText.isNotEmpty) {
+        list = list.where((c) {
+          final name = (c['company_name'] ?? '').toString().toLowerCase();
+          final email = (c['contact_email'] ?? '').toString().toLowerCase();
+          return name.contains(queryText) || email.contains(queryText);
+        }).toList();
+      }
+
+      setState(() => companies = list);
+        } catch (e) {
       debugPrint('Error loading companies: $e');
       setState(() => companies = []);
     } finally {
@@ -197,10 +193,10 @@ class _CompaniesPageState extends State<CompaniesPage> {
               child: loading
                   ? const Center(child: CircularProgressIndicator(color: Colors.redAccent))
                   : companies.isEmpty
-                      ? Center(
+                      ? const Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
+                            children: [
                               Icon(Icons.business_outlined,
                                   color: Colors.white24, size: 42),
                               SizedBox(height: 8),
@@ -284,7 +280,7 @@ class CompanyCard extends StatelessWidget {
             ),
             Switch(
               value: available,
-              activeColor: Colors.blueAccent,
+              activeThumbColor: Colors.blueAccent,
               onChanged: (_) => onToggleAvailability(),
             ),
           ],

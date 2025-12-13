@@ -22,9 +22,9 @@ class WalletPage extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
+              const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text('Balance', style: TextStyle(color: Colors.white70)),
                     SizedBox(height: 6),
                     Text('GHS 120.00',

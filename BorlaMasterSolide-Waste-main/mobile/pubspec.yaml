@@ -15,12 +15,12 @@ dependencies:
 
   # ☁️ Backend & State Management
   supabase_flutter: ^2.3.4
-  flutter_riverpod: ^2.3.6
-  flutter_dotenv: ^5.1.0
+  flutter_riverpod: ^3.0.3
+  flutter_dotenv: ^6.0.0
 
   # 🖼️ Media & Utilities
   image_picker: ^1.1.1
-  flutter_image_compress: ^1.1.0
+  flutter_image_compress: ^2.4.0
   uuid: ^4.4.0
   http: ^1.1.0
 
@@ -28,7 +28,7 @@ dependencies:
   multi_select_flutter: ^4.1.3
 
   # 📅 Date formatting
-  intl: ^0.18.1
+  intl: ^0.20.2
 
   # 🔊 Sound playback for notifications
   audioplayers: ^6.1.0
@@ -36,17 +36,19 @@ dependencies:
   # 💳 Payment Integration (Paystack)
   flutter_paystack_plus: ^2.3.0
 
-  fl_chart: ^0.68.0
+  fl_chart: ^1.1.1
 
   data_table_2: ^2.4.0
 
-  csv: ^5.0.0
-  share_plus: ^6.0.0 # optional, for share/export
+  csv: ^6.0.0
+  share_plus: ^12.0.1 # optional, for share/export
+  path_provider: ^2.0.17
+  pdf: ^3.11.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^2.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

@@ -1,0 +1,14 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: "0 * * * *" # Runs every 1 hour
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Project
+        run: |
+          curl -I https://ritcecccqmbekeamlysr.supabase.co/rest/v1/

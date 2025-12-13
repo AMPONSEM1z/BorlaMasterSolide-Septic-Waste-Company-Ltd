@@ -224,7 +224,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                         fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
-                  Text(
+                  const Text(
                     'Select Waste Type:',
                     style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),

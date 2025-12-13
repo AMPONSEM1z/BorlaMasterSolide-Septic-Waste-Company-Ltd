@@ -103,7 +103,7 @@ class _SignupScreenState extends State<SignupScreen> {
             if (isCompany) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _companyType,
+                initialValue: _companyType,
                 items: const [
                   DropdownMenuItem(value: 'solid_waste', child: Text('Solid waste (Garbage)')),
                   DropdownMenuItem(value: 'septic', child: Text('Septic')),

@@ -30,10 +30,10 @@ class HomePage extends StatelessWidget {
                 const Text('Here is a quick summary of your activity:',
                     style: TextStyle(color: Colors.white70)),
                 const SizedBox(height: 20),
-                Wrap(
+                const Wrap(
                   spacing: 12,
                   runSpacing: 12,
-                  children: const [
+                  children: [
                     _StatCard(title: 'Upcoming Pickups', value: '2'),
                     _StatCard(title: 'Completed', value: '15'),
                     _StatCard(title: 'Wallet Balance', value: 'GHS 120.00'),
@@ -90,7 +90,7 @@ class HomePage extends StatelessWidget {
 class _StatCard extends StatelessWidget {
   final String title;
   final String value;
-  const _StatCard({required this.title, required this.value, super.key});
+  const _StatCard({required this.title, required this.value});
 
   @override
   Widget build(BuildContext context) {

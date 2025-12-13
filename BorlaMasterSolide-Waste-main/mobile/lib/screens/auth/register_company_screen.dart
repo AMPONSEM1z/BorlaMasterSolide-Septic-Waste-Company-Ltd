@@ -60,14 +60,12 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
   Future<void> _loadRegions() async {
     try {
       final data = await supabase.from('regions').select('region_name');
-      if (data is List) {
-        final regionNames = data
-            .map<String>((r) => (r['region_name'] ?? '').toString())
-            .where((s) => s.isNotEmpty)
-            .toList();
-        setState(() => _regions = regionNames);
-      }
-      debugPrint('✅ Regions loaded: $_regions');
+      final regionNames = data
+          .map<String>((r) => (r['region_name'] ?? '').toString())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      setState(() => _regions = regionNames);
+          debugPrint('✅ Regions loaded: $_regions');
     } catch (e) {
       debugPrint('❌ Error loading regions: $e');
     }
@@ -88,14 +86,12 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
           .from('towns')
           .select('town_name')
           .eq('region_name', region);
-      if (townsData is List) {
-        final townsList = townsData
-            .map<String>((t) => (t['town_name'] ?? '').toString())
-            .where((s) => s.isNotEmpty)
-            .toList();
-        setState(() => _towns = townsList);
-      }
-      debugPrint('✅ Towns loaded for $region: $_towns');
+      final townsList = townsData
+          .map<String>((t) => (t['town_name'] ?? '').toString())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      setState(() => _towns = townsList);
+          debugPrint('✅ Towns loaded for $region: $_towns');
     } catch (e) {
       debugPrint('❌ Error fetching towns for $region: $e');
     }
@@ -253,7 +249,7 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
 
               // Company type
               DropdownButtonFormField<String>(
-                value: _selectedCompanyType,
+                initialValue: _selectedCompanyType,
                 decoration: InputDecoration(
                   labelText: 'Company Type',
                   labelStyle: const TextStyle(color: Colors.white70),
@@ -278,7 +274,7 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
 
               // Region dropdown
               DropdownButtonFormField<String>(
-                value: _selectedRegion,
+                initialValue: _selectedRegion,
                 decoration: InputDecoration(
                   labelText: 'Region',
                   labelStyle: const TextStyle(color: Colors.white70),
@@ -364,8 +360,9 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
                   icon: Icons.lock_outline,
                   obscure: true,
                   validator: (v) {
-                    if (v == null || v.length < 6)
+                    if (v == null || v.length < 6) {
                       return 'Minimum 6 characters';
+                    }
                     return null;
                   }),
 
