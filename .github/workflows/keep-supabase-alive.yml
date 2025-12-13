@@ -1,14 +1,32 @@
-name: Keep Supabase Alive
+name: Keep Supabase Projects Alive
 
 on:
   schedule:
-    - cron: "0 * * * *" # Runs every 1 hour
-  workflow_dispatch:
+    - cron: "0 * * * *" # every hour
+  workflow_dispatch: # allows manual trigger
 
 jobs:
-  ping:
+  keep_alive:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Supabase Project
+      - name: Ping all Supabase projects
         run: |
-          curl -I https://ritcecccqmbekeamlysr.supabase.co/rest/v1/
+          declare -A projects
+          projects=(
+            ["https://ritcecccqmbekeamlysr.supabase.co/rest/v1/"]="${{ secrets.SUPABASE_KEY_1 }}"
+            ["https://cqjcpsgerdbzjcasozhj.supabase.co"]="${{ secrets.SUPABASE_KEY_2 }}"
+            ["https://tsnkaxxoyycsahbhqtez.supabase.co"]="${{ secrets.SUPABASE_KEY_3 }}"
+            ["https://voivdsecewtkmanteiri.supabase.co"]="${{ secrets.SUPABASE_KEY_4 }}"
+            ["https://ngfaueanjefzvfguggmu.supabase.co"]="${{ secrets.SUPABASE_KEY_5 }}"
+          )
+
+          for url in "${!projects[@]}"; do
+            key="${projects[$url]}"
+            if [ -z "$key" ]; then
+              echo "Pinging $url without API key"
+              curl -I -s "$url" > /dev/null
+            else
+              echo "Pinging $url with API key"
+              curl -I -s -H "apikey: $key" "$url" > /dev/null
+            fi
+          done
