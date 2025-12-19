@@ -8,39 +8,48 @@ on:
 jobs:
   keep_alive:
     runs-on: ubuntu-latest
+
     steps:
       - name: Ping all Supabase projects
         id: ping
         run: |
+          set -e
+
           declare -A projects
           projects=(
             ["https://ritcecccqmbekeamlysr.supabase.co/rest/v1/"]="${{ secrets.SUPABASE_KEY_1 }}"
-            ["https://cqjcpsgerdbzjcasozhj.supabase.co"]="${{ secrets.SUPABASE_KEY_2 }}"
-            ["https://tsnkaxxoyycsahbhqtez.supabase.co"]="${{ secrets.SUPABASE_KEY_3 }}"
-            ["https://voivdsecewtkmanteiri.supabase.co"]="${{ secrets.SUPABASE_KEY_4 }}"
-            ["https://ngfaueanjefzvfguggmu.supabase.co"]="${{ secrets.SUPABASE_KEY_5 }}"
+            ["https://cqjcpsgerdbzjcasozhj.supabase.co/rest/v1/"]="${{ secrets.SUPABASE_KEY_2 }}"
+            ["https://tsnkaxxoyycsahbhqtez.supabase.co/rest/v1/"]="${{ secrets.SUPABASE_KEY_3 }}"
+            ["https://voivdsecewtkmanteiri.supabase.co/rest/v1/"]="${{ secrets.SUPABASE_KEY_4 }}"
+            ["https://ngfaueanjefzvfguggmu.supabase.co/rest/v1/"]="${{ secrets.SUPABASE_KEY_5 }}"
           )
 
           FAILED=""
 
           for url in "${!projects[@]}"; do
             key="${projects[$url]}"
+            echo "🔄 Pinging $url"
+
             if [ -z "$key" ]; then
-              status=$(curl -o /dev/null -s -w "%{http_code}" "$url")
+              curl --max-time 15 -s -o /dev/null "$url"
+              exit_code=$?
             else
-              status=$(curl -o /dev/null -s -w "%{http_code}" -H "apikey: $key" "$url")
+              curl --max-time 15 -s -o /dev/null -H "apikey: $key" "$url"
+              exit_code=$?
             fi
 
-            if [ "$status" -ge 200 ] && [ "$status" -lt 400 ]; then
-              echo "✅ $url is alive (HTTP $status)"
+            if [ "$exit_code" -eq 0 ]; then
+              echo "✅ $url responded (project alive)"
             else
-              echo "⚠️ $url might be down (HTTP $status)"
-              FAILED="$FAILED $url (HTTP $status)\n"
+              echo "❌ $url unreachable (network failure)"
+              FAILED="${FAILED}- $url (connection failed)\n"
             fi
           done
 
-          # Set failed URLs as output for next step
-          echo "failed_urls=$FAILED" >> $GITHUB_OUTPUT
+          # Export failed URLs correctly (multiline-safe)
+          echo "failed_urls<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$FAILED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Send Email if any project failed
         if: steps.ping.outputs.failed_urls != ''
@@ -51,9 +60,11 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "⚠️ Supabase Project Ping Failed"
-          to: allbusiness1z1234@gmail.com
+          to: your-email@example.com
           from: ${{ secrets.EMAIL_USERNAME }}
           body: |
-            Some Supabase projects failed to respond during the ping check:
+            Some Supabase projects could not be reached during the keep-alive check:
 
             ${{ steps.ping.outputs.failed_urls }}
+
+            These failures indicate a real network or availability issue.
