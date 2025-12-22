@@ -13,6 +13,7 @@ jobs:
       - name: Ping all Supabase projects
         id: ping
         run: |
+          # List of Supabase URLs
           urls=(
             "https://ritcecccqmbekeamlysr.supabase.co/rest/v1/"
             "https://cqjcpsgerdbzjcasozhj.supabase.co/rest/v1/"
@@ -21,11 +22,25 @@ jobs:
             "https://ngfaueanjefzvfguggmu.supabase.co/rest/v1/"
           )
 
+          # Corresponding anon keys for each project
+          keys=(
+            "${{ secrets.SUPABASE_KEY_1 }}"
+            "${{ secrets.SUPABASE_KEY_2 }}"
+            "${{ secrets.SUPABASE_KEY_3 }}"
+            "${{ secrets.SUPABASE_KEY_4 }}"
+            "${{ secrets.SUPABASE_KEY_5 }}"
+          )
+
           FAILED=""
 
-          for url in "${urls[@]}"; do
+          # Ping each project with its key
+          for i in "${!urls[@]}"; do
+            url="${urls[$i]}"
+            key="${keys[$i]}"
             echo "🔄 Pinging $url"
-            if curl -I --max-time 15 "$url" > /dev/null 2>&1; then
+            if curl -I --max-time 15 "$url" \
+                -H "apikey: $key" \
+                -H "Authorization: Bearer $key" > /dev/null 2>&1; then
               echo "✅ $url OK"
             else
               echo "❌ $url failed"
@@ -33,6 +48,7 @@ jobs:
             fi
           done
 
+          # Save failed URLs to GitHub output
           if [ -n "$FAILED" ]; then
             echo "failed_urls<<EOF" >> $GITHUB_OUTPUT
             echo -e "$FAILED" >> $GITHUB_OUTPUT
@@ -48,7 +64,7 @@ jobs:
           username: ${{ secrets.EMAIL_USERNAME }}
           password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "⚠️ Supabase Project Ping Failed"
-          to: allbusiness1z1234@gmail.com
+          to: ${{ secrets.EMAIL_TO }}
           from: ${{ secrets.EMAIL_USERNAME }}
           body: |
             Some Supabase projects failed the keep-alive ping:
