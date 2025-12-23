@@ -2,7 +2,7 @@ name: Keep Supabase Projects Alive with Status Email
 
 on:
   schedule:
-    - cron: "0 */12 * * *" # every 12 hours
+    - cron: "0 0 */3 * *" # every 3 days at 00:00 UTC
   workflow_dispatch:
 
 jobs:
