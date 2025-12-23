@@ -65,7 +65,7 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
           .where((s) => s.isNotEmpty)
           .toList();
       setState(() => _regions = regionNames);
-          debugPrint('✅ Regions loaded: $_regions');
+      debugPrint('✅ Regions loaded: $_regions');
     } catch (e) {
       debugPrint('❌ Error loading regions: $e');
     }
@@ -91,7 +91,7 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
           .where((s) => s.isNotEmpty)
           .toList();
       setState(() => _towns = townsList);
-          debugPrint('✅ Towns loaded for $region: $_towns');
+      debugPrint('✅ Towns loaded for $region: $_towns');
     } catch (e) {
       debugPrint('❌ Error fetching towns for $region: $e');
     }
@@ -294,28 +294,68 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
               ),
               const SizedBox(height: 12),
 
-              // Towns MultiSelect (shows a friendly message if empty)
               _towns.isNotEmpty
                   ? MultiSelectDialogField<String>(
                       items: _towns
                           .map((t) => MultiSelectItem<String>(t, t))
                           .toList(),
-                      title: const Text('Select Towns Served',
-                          style: TextStyle(color: Colors.white)),
-                      buttonText: const Text('Select Towns',
-                          style: TextStyle(color: Colors.white)),
+
+                      title: const Text(
+                        'Select Towns Served',
+                        style: TextStyle(color: Colors.white),
+                      ),
+
+                      buttonText: const Text(
+                        'Select Towns',
+                        style: TextStyle(color: Colors.white),
+                      ),
+
                       listType: MultiSelectListType.CHIP,
+
+                      // ✅ NORMAL items text (visible on dark bg)
+                      itemsTextStyle: const TextStyle(
+                        color: Colors.white70,
+                      ),
+
+                      // ✅ SELECTED items text (VERY IMPORTANT)
+                      selectedItemsTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+
+                      // ✅ SELECTED background color
+                      selectedColor: Colors.blueAccent,
+
                       decoration: BoxDecoration(
                         color: Colors.white10,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.blueAccent, width: 1),
                       ),
+
                       chipDisplay: MultiSelectChipDisplay(
                         chipColor: Colors.blueAccent,
                         textStyle: const TextStyle(color: Colors.white),
                       ),
+
+                      // ✅ OK / Cancel (already fixed)
+                      confirmText: const Text(
+                        'OK',
+                        style: TextStyle(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      cancelText: const Text(
+                        'CANCEL',
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
                       onConfirm: (values) =>
                           setState(() => _selectedTowns = values),
+
                       initialValue: _selectedTowns,
                     )
                   : Container(
@@ -327,10 +367,10 @@ class _RegisterCompanyScreenState extends State<RegisterCompanyScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Text(
-                          'No towns available for selected region.',
-                          style: TextStyle(color: Colors.white70)),
+                        'No towns available for selected region.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
                     ),
-
               const SizedBox(height: 12),
 
               _buildTextField(
