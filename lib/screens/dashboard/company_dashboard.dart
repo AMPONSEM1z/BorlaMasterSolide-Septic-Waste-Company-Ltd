@@ -60,9 +60,7 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
               profile: _companyProfile ?? {},
               onProfileUpdated: _refreshProfile,
             ),
-            CompanyProfilePage(
-              onLogout: _logout,
-            ),
+            const CompanyProfilePage(),
           ]);
         });
       }

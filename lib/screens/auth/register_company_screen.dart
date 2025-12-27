@@ -54,6 +54,7 @@
 //     super.dispose();
 //   }
 
+<<<<<<< HEAD
 //   // -------------------------
 //   // Data loading from Supabase
 //   // -------------------------
@@ -70,6 +71,24 @@
 //       debugPrint('❌ Error loading regions: $e');
 //     }
 //   }
+=======
+  // -------------------------
+  // Data loading from Supabase
+  // -------------------------
+  Future<void> _loadRegions() async {
+    try {
+      final data = await supabase.from('regions').select('region_name');
+      final regionNames = data
+          .map<String>((r) => (r['region_name'] ?? '').toString())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      setState(() => _regions = regionNames);
+      debugPrint('✅ Regions loaded: $_regions');
+    } catch (e) {
+      debugPrint('❌ Error loading regions: $e');
+    }
+  }
+>>>>>>> 820755595d1e34fff3d64ff0014a6e6178bc4c31
 
 //   // When region changes, fetch towns for that region
 //   Future<void> _onRegionChanged(String? region) async {
@@ -81,6 +100,7 @@
 //       _selectedTowns = [];
 //     });
 
+<<<<<<< HEAD
 //     try {
 //       final townsData = await supabase
 //           .from('towns')
@@ -96,6 +116,23 @@
 //       debugPrint('❌ Error fetching towns for $region: $e');
 //     }
 //   }
+=======
+    try {
+      final townsData = await supabase
+          .from('towns')
+          .select('town_name')
+          .eq('region_name', region);
+      final townsList = townsData
+          .map<String>((t) => (t['town_name'] ?? '').toString())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      setState(() => _towns = townsList);
+      debugPrint('✅ Towns loaded for $region: $_towns');
+    } catch (e) {
+      debugPrint('❌ Error fetching towns for $region: $e');
+    }
+  }
+>>>>>>> 820755595d1e34fff3d64ff0014a6e6178bc4c31
 
 //   // -------------------------
 //   // Image picker for logo
@@ -314,6 +351,7 @@
 //               ),
 //               const SizedBox(height: 12),
 
+<<<<<<< HEAD
 //               // Towns MultiSelect (shows a friendly message if empty)
 //               _towns.isNotEmpty
 //                   ? MultiSelectDialogField<String>(
@@ -379,6 +417,86 @@
 //                     ),
 
 //               const SizedBox(height: 12),
+=======
+              _towns.isNotEmpty
+                  ? MultiSelectDialogField<String>(
+                      items: _towns
+                          .map((t) => MultiSelectItem<String>(t, t))
+                          .toList(),
+
+                      title: const Text(
+                        'Select Towns Served',
+                        style: TextStyle(color: Colors.white),
+                      ),
+
+                      buttonText: const Text(
+                        'Select Towns',
+                        style: TextStyle(color: Colors.white),
+                      ),
+
+                      listType: MultiSelectListType.CHIP,
+
+                      // ✅ NORMAL items text (visible on dark bg)
+                      itemsTextStyle: const TextStyle(
+                        color: Colors.white70,
+                      ),
+
+                      // ✅ SELECTED items text (VERY IMPORTANT)
+                      selectedItemsTextStyle: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+
+                      // ✅ SELECTED background color
+                      selectedColor: Colors.blueAccent,
+
+                      decoration: BoxDecoration(
+                        color: Colors.white10,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blueAccent, width: 1),
+                      ),
+
+                      chipDisplay: MultiSelectChipDisplay(
+                        chipColor: Colors.blueAccent,
+                        textStyle: const TextStyle(color: Colors.white),
+                      ),
+
+                      // ✅ OK / Cancel (already fixed)
+                      confirmText: const Text(
+                        'OK',
+                        style: TextStyle(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      cancelText: const Text(
+                        'CANCEL',
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      onConfirm: (values) =>
+                          setState(() => _selectedTowns = values),
+
+                      initialValue: _selectedTowns,
+                    )
+                  : Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white10,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Text(
+                        'No towns available for selected region.',
+                        style: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+              const SizedBox(height: 12),
+>>>>>>> 820755595d1e34fff3d64ff0014a6e6178bc4c31
 
 //               _buildTextField(
 //                 controller: _address,
