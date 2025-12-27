@@ -1,0 +1,74 @@
+name: Keep Supabase Projects Alive with Status Email
+
+on:
+  schedule:
+    - cron: "0 0 */3 * *" # every 3 days at 00:00 UTC
+  workflow_dispatch:
+
+jobs:
+  keep_alive:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping all Supabase projects
+        id: ping
+        run: |
+          # List of Supabase URLs
+          urls=(
+            "https://ritcecccqmbekeamlysr.supabase.co/rest/v1/"
+            "https://cqjcpsgerdbzjcasozhj.supabase.co/rest/v1/"
+            "https://tsnkaxxoyycsahbhqtez.supabase.co/rest/v1/"
+            "https://voivdsecewtkmanteiri.supabase.co/rest/v1/"
+            "https://ngfaueanjefzvfguggmu.supabase.co/rest/v1/"
+          )
+
+          # Corresponding anon keys for each project
+          keys=(
+            "${{ secrets.SUPABASE_KEY_1 }}"
+            "${{ secrets.SUPABASE_KEY_2 }}"
+            "${{ secrets.SUPABASE_KEY_3 }}"
+            "${{ secrets.SUPABASE_KEY_4 }}"
+            "${{ secrets.SUPABASE_KEY_5 }}"
+          )
+
+          FAILED=""
+
+          # Ping each project with its key
+          for i in "${!urls[@]}"; do
+            url="${urls[$i]}"
+            key="${keys[$i]}"
+            echo "🔄 Pinging $url"
+            if curl -I --max-time 15 "$url" \
+                -H "apikey: $key" \
+                -H "Authorization: Bearer $key" > /dev/null 2>&1; then
+              echo "✅ $url OK"
+            else
+              echo "❌ $url failed"
+              FAILED="${FAILED}- $url\n"
+            fi
+          done
+
+          # Save failed URLs to GitHub output
+          if [ -n "$FAILED" ]; then
+            echo "failed_urls<<EOF" >> $GITHUB_OUTPUT
+            echo -e "$FAILED" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "failed_urls<<EOF" >> $GITHUB_OUTPUT
+            echo -e "" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send status email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "Supabase Project Ping Status"
+          to: ${{ secrets.EMAIL_TO }}
+          from: ${{ secrets.EMAIL_USERNAME }}
+          body: |
+            ${{ steps.ping.outputs.failed_urls }}
+            ${{ steps.ping.outputs.failed_urls && '' || '✅ All Supabase projects are OK!'}}

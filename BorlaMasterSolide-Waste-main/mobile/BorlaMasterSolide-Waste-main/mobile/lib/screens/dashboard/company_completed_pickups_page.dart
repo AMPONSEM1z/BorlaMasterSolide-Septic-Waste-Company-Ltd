@@ -27,12 +27,11 @@ class _CompanyCompletedPickupsPageState
     if (user == null) return;
 
     try {
-      // Fetch completed bookings with **customer profile info**
-      // Explicitly specify the customer relationship to avoid errors
+      // Fetch completed bookings with **customer info**
       final data = await supabase
           .from('bookings')
           .select(
-              '*, profiles!bookings_customer_fk(full_name, email, phone_number), companies(company_name)')
+              '*, customers!bookings_customer_fk(full_name, email, phone_number), companies(company_name)')
           .eq('company_id', user.id)
           .eq('status', 'completed')
           .order('pickup_date', ascending: false);
@@ -83,7 +82,7 @@ class _CompanyCompletedPickupsPageState
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
                         final b = bookings[index];
-                        final customer = b['profiles'] ?? {};
+                        final customer = b['customers'] ?? {};
                         final company = b['companies'] ?? {};
 
                         return Card(

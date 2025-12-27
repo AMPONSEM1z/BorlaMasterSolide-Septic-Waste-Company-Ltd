@@ -47,16 +47,14 @@ class _OverviewPageState extends State<OverviewPage> {
     try {
       // Total Customers
       final customersRes = await supabase.from('customers').select('id');
-      if (customersRes is List) totalCustomers = customersRes.length;
+      totalCustomers = customersRes.length;
 
       // Total Companies
       final companiesRes = await supabase.from('companies').select('id, available_for_customers, subscription_status');
-      if (companiesRes is List) {
-        totalCompanies = companiesRes.length;
-        visibleCompanies = companiesRes.where((c) => c['available_for_customers'] == true).length;
-        activeSubscriptions = companiesRes.where((c) => c['subscription_status'] == 'active').length;
-      }
-    } catch (e) {
+      totalCompanies = companiesRes.length;
+      visibleCompanies = companiesRes.where((c) => c['available_for_customers'] == true).length;
+      activeSubscriptions = companiesRes.where((c) => c['subscription_status'] == 'active').length;
+        } catch (e) {
       debugPrint('Error loading metrics: $e');
     }
   }
@@ -68,10 +66,8 @@ class _OverviewPageState extends State<OverviewPage> {
           .select()
           .order('created_at', ascending: false)
           .limit(5);
-      if (res is List) {
-        recentActivities = res.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
-      }
-    } catch (e) {
+      recentActivities = res.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
+        } catch (e) {
       debugPrint('Error loading recent activities: $e');
     }
   }
@@ -79,19 +75,17 @@ class _OverviewPageState extends State<OverviewPage> {
   Future<void> _loadCustomerChart() async {
     try {
       final res = await supabase.from('customers').select('created_at');
-      if (res is List) {
-        Map<String, int> data = {};
-        for (var c in res) {
-          final created = c['created_at'];
-          if (created != null) {
-            final date = DateTime.parse(created);
-            final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
-            data[key] = (data[key] ?? 0) + 1;
-          }
+      Map<String, int> data = {};
+      for (var c in res) {
+        final created = c['created_at'];
+        if (created != null) {
+          final date = DateTime.parse(created);
+          final key = '${date.year}-${date.month.toString().padLeft(2, '0')}';
+          data[key] = (data[key] ?? 0) + 1;
         }
-        customersOverTime = Map.fromEntries(data.entries.toList()..sort((a,b) => a.key.compareTo(b.key)));
       }
-    } catch (e) {
+      customersOverTime = Map.fromEntries(data.entries.toList()..sort((a,b) => a.key.compareTo(b.key)));
+        } catch (e) {
       debugPrint('Error loading customer chart: $e');
     }
   }
@@ -99,18 +93,16 @@ class _OverviewPageState extends State<OverviewPage> {
   Future<void> _loadCompaniesRegionChart() async {
     try {
       final res = await supabase.from('companies').select('regions_served');
-      if (res is List) {
-        Map<String, int> data = {};
-        for (var c in res) {
-          final regions = (c['regions_served'] ?? []) as List<dynamic>;
-          for (var r in regions) {
-            final region = r.toString();
-            data[region] = (data[region] ?? 0) + 1;
-          }
+      Map<String, int> data = {};
+      for (var c in res) {
+        final regions = (c['regions_served'] ?? []) as List<dynamic>;
+        for (var r in regions) {
+          final region = r.toString();
+          data[region] = (data[region] ?? 0) + 1;
         }
-        companiesPerRegion = Map.fromEntries(data.entries.toList()..sort((a,b) => b.value.compareTo(a.value)));
       }
-    } catch (e) {
+      companiesPerRegion = Map.fromEntries(data.entries.toList()..sort((a,b) => b.value.compareTo(a.value)));
+        } catch (e) {
       debugPrint('Error loading companies per region chart: $e');
     }
   }
@@ -199,7 +191,7 @@ class _OverviewPageState extends State<OverviewPage> {
                               height: 200,
                               child: LineChart(
                                 LineChartData(
-                                  gridData: FlGridData(show: false),
+                                  gridData: const FlGridData(show: false),
                                   titlesData: FlTitlesData(
                                     bottomTitles: AxisTitles(
                                       sideTitles: SideTitles(
@@ -215,7 +207,7 @@ class _OverviewPageState extends State<OverviewPage> {
                                         interval: 1,
                                       ),
                                     ),
-                                    leftTitles: AxisTitles(
+                                    leftTitles: const AxisTitles(
                                       sideTitles: SideTitles(showTitles: true),
                                     ),
                                   ),
@@ -254,7 +246,7 @@ class _OverviewPageState extends State<OverviewPage> {
                               height: 200,
                               child: BarChart(
                                 BarChartData(
-                                  gridData: FlGridData(show: false),
+                                  gridData: const FlGridData(show: false),
                                   titlesData: FlTitlesData(
                                     bottomTitles: AxisTitles(
                                       sideTitles: SideTitles(
@@ -270,7 +262,7 @@ class _OverviewPageState extends State<OverviewPage> {
                                         interval: 1,
                                       ),
                                     ),
-                                    leftTitles: AxisTitles(
+                                    leftTitles: const AxisTitles(
                                       sideTitles: SideTitles(showTitles: true),
                                     ),
                                   ),

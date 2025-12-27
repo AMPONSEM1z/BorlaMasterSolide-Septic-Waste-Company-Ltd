@@ -32,28 +32,30 @@ class _RequestsPageState extends State<RequestsPage> {
           .select('*, customers!bookings_customer_fk(*)')
           .order('created_at', ascending: false);
 
-      if (res is List) {
-        var list = res.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
+      var list = res
+          .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
 
-        // Apply status filter
-        if (selectedStatus != null && selectedStatus!.isNotEmpty) {
-          list = list.where((r) => (r['status'] ?? '').toString() == selectedStatus).toList();
-        }
-
-        // Client-side search
-        final queryText = _searchController.text.trim().toLowerCase();
-        if (queryText.isNotEmpty) {
-          list = list.where((r) {
-            final customerName = ((r['customers']?['full_name'] ?? '') as String).toLowerCase();
-            final address = ((r['pickup_address'] ?? '') as String).toLowerCase();
-            return customerName.contains(queryText) || address.contains(queryText);
-          }).toList();
-        }
-
-        setState(() => requests = list);
-      } else {
-        setState(() => requests = []);
+      // Apply status filter
+      if (selectedStatus != null && selectedStatus!.isNotEmpty) {
+        list = list
+            .where((r) => (r['status'] ?? '').toString() == selectedStatus)
+            .toList();
       }
+
+      // Client-side search
+      final queryText = _searchController.text.trim().toLowerCase();
+      if (queryText.isNotEmpty) {
+        list = list.where((r) {
+          final customerName =
+              ((r['customers']?['full_name'] ?? '') as String).toLowerCase();
+          final address = ((r['pickup_address'] ?? '') as String).toLowerCase();
+          return customerName.contains(queryText) ||
+              address.contains(queryText);
+        }).toList();
+      }
+
+      setState(() => requests = list);
     } catch (e) {
       debugPrint('Error loading bookings: $e');
       setState(() => requests = []);
@@ -62,13 +64,16 @@ class _RequestsPageState extends State<RequestsPage> {
     }
   }
 
-  Future<void> _updateRequestStatus(Map<String, dynamic> request, String newStatus) async {
+  Future<void> _updateRequestStatus(
+      Map<String, dynamic> request, String newStatus) async {
     final id = request['id'] as String?;
     if (id == null) return;
 
     setState(() => actionLoading = true);
     try {
-      await supabase.from('bookings').update({'status': newStatus}).eq('id', id);
+      await supabase
+          .from('bookings')
+          .update({'status': newStatus}).eq('id', id);
 
       // Optional: log admin action
       final adminId = supabase.auth.currentUser?.id;
@@ -132,7 +137,8 @@ class _RequestsPageState extends State<RequestsPage> {
             Row(
               children: [
                 DropdownButton<String>(
-                  hint: const Text('Filter by status', style: TextStyle(color: Colors.white)),
+                  hint: const Text('Filter by status',
+                      style: TextStyle(color: Colors.white)),
                   value: selectedStatus,
                   dropdownColor: const Color(0xFF1E1E1E),
                   underline: const SizedBox(),
@@ -140,7 +146,8 @@ class _RequestsPageState extends State<RequestsPage> {
                   items: [null, ...statusFilterOptions].map((s) {
                     return DropdownMenuItem<String>(
                       value: s,
-                      child: Text(s ?? 'All', style: const TextStyle(color: Colors.white)),
+                      child: Text(s ?? 'All',
+                          style: const TextStyle(color: Colors.white)),
                     );
                   }).toList(),
                   onChanged: (val) async {
@@ -161,7 +168,8 @@ class _RequestsPageState extends State<RequestsPage> {
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none),
-                      prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                      prefixIcon:
+                          const Icon(Icons.search, color: Colors.white54),
                     ),
                     onChanged: (v) => _loadRequests(),
                   ),
@@ -171,7 +179,8 @@ class _RequestsPageState extends State<RequestsPage> {
                   onPressed: actionLoading ? null : _loadRequests,
                   icon: const Icon(Icons.search),
                   label: const Text('Apply'),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent),
                 ),
               ],
             ),
@@ -179,24 +188,29 @@ class _RequestsPageState extends State<RequestsPage> {
             // Requests list
             Expanded(
               child: loading
-                  ? const Center(child: CircularProgressIndicator(color: Colors.redAccent))
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.redAccent))
                   : requests.isEmpty
-                      ? Center(
+                      ? const Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
-                              Icon(Icons.request_page, color: Colors.white24, size: 42),
+                            children: [
+                              Icon(Icons.request_page,
+                                  color: Colors.white24, size: 42),
                               SizedBox(height: 8),
-                              Text('No pickup requests found', style: TextStyle(color: Colors.white70)),
+                              Text('No pickup requests found',
+                                  style: TextStyle(color: Colors.white70)),
                             ],
                           ),
                         )
                       : ListView.separated(
                           itemCount: requests.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 12),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
                           itemBuilder: (_, idx) {
                             final r = requests[idx];
-                            final customerName = r['customers']?['full_name'] ?? '—';
+                            final customerName =
+                                r['customers']?['full_name'] ?? '—';
                             final address = r['pickup_address'] ?? '—';
                             final status = r['status'] ?? 'Pending';
 
@@ -213,33 +227,47 @@ class _RequestsPageState extends State<RequestsPage> {
                                   children: [
                                     CircleAvatar(
                                       radius: 26,
-                                      backgroundColor: Colors.blueAccent.withOpacity(0.12),
-                                      child: Text(customerName.substring(0, 1).toUpperCase(),
-                                          style: const TextStyle(color: Colors.white)),
+                                      backgroundColor:
+                                          Colors.blueAccent.withOpacity(0.12),
+                                      child: Text(
+                                          customerName
+                                              .substring(0, 1)
+                                              .toUpperCase(),
+                                          style: const TextStyle(
+                                              color: Colors.white)),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(customerName,
                                                 style: const TextStyle(
-                                                    color: Colors.white, fontWeight: FontWeight.bold)),
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.bold)),
                                             const SizedBox(height: 6),
-                                            Text(address, style: const TextStyle(color: Colors.white70)),
+                                            Text(address,
+                                                style: const TextStyle(
+                                                    color: Colors.white70)),
                                           ]),
                                     ),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 6),
                                       decoration: BoxDecoration(
                                           color: status == 'Completed'
                                               ? Colors.green
                                               : status == 'In Progress'
                                                   ? Colors.orange
                                                   : Colors.grey,
-                                          borderRadius: BorderRadius.circular(8)),
+                                          borderRadius:
+                                              BorderRadius.circular(8)),
                                       child: Text(status,
-                                          style: const TextStyle(color: Colors.white, fontSize: 12)),
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12)),
                                     ),
                                   ],
                                 ),
@@ -272,7 +300,9 @@ class RequestDetailsSheet extends StatelessWidget {
     if (id == null) return;
 
     try {
-      await supabase.from('bookings').update({'status': newStatus}).eq('id', id);
+      await supabase
+          .from('bookings')
+          .update({'status': newStatus}).eq('id', id);
 
       final adminId = supabase.auth.currentUser?.id;
       await supabase.from('admin_logs').insert({
@@ -303,11 +333,13 @@ class RequestDetailsSheet extends StatelessWidget {
               width: 60,
               height: 6,
               decoration: BoxDecoration(
-                  color: Colors.white12, borderRadius: BorderRadius.circular(6)),
+                  color: Colors.white12,
+                  borderRadius: BorderRadius.circular(6)),
             ),
           ),
           const SizedBox(height: 12),
-          Text(customerName, style: const TextStyle(color: Colors.white, fontSize: 24)),
+          Text(customerName,
+              style: const TextStyle(color: Colors.white, fontSize: 24)),
           const SizedBox(height: 6),
           Text(address, style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 16),
@@ -316,13 +348,20 @@ class RequestDetailsSheet extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: ElevatedButton(
-                  onPressed: status == s ? null : () async {
-                    await _setStatus(s);
-                    onUpdated();
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Status updated')));
-                  },
+                  onPressed: status == s
+                      ? null
+                      : () async {
+                          await _setStatus(s);
+                          onUpdated();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Status updated')));
+                        },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: s == 'Completed' ? Colors.green : s == 'In Progress' ? Colors.orange : Colors.grey,
+                    backgroundColor: s == 'Completed'
+                        ? Colors.green
+                        : s == 'In Progress'
+                            ? Colors.orange
+                            : Colors.grey,
                   ),
                   child: Text(s),
                 ),
@@ -332,7 +371,8 @@ class RequestDetailsSheet extends StatelessWidget {
           const SizedBox(height: 18),
           ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
               child: const Text('Close')),
         ],
       ),

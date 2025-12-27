@@ -106,9 +106,9 @@ class _CompanyConfirmedPickupsPageState
                             style: const TextStyle(color: Colors.white70)),
                         trailing: ElevatedButton(
                           onPressed: () => _confirmPickup(r['id']),
-                          child: const Text('Confirm Pickup'),
                           style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.redAccent),
+                          child: const Text('Confirm Pickup'),
                         ),
                       ),
                     );

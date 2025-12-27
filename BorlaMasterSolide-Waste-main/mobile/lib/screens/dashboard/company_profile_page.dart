@@ -4,12 +4,7 @@ import 'company_edit_profile_page.dart';
 import 'company_change_password_page.dart';
 
 class CompanyProfilePage extends StatefulWidget {
-  final VoidCallback onLogout;
-
-  const CompanyProfilePage({
-    super.key,
-    required this.onLogout,
-  });
+  const CompanyProfilePage({super.key});
 
   @override
   State<CompanyProfilePage> createState() => _CompanyProfilePageState();
@@ -47,13 +42,25 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
         });
       }
     } catch (e) {
-      print('Error fetching company profile: $e');
+      debugPrint('Error fetching company profile: $e');
       setState(() => _loading = false);
     }
   }
 
   Future<void> _refreshProfile() async {
     await _fetchCompanyProfile();
+  }
+
+  // ✅ FIXED LOGOUT (same logic as working page)
+  Future<void> _logout() async {
+    await supabase.auth.signOut();
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/login',
+      (route) => false,
+    );
   }
 
   @override
@@ -91,16 +98,20 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                 : null,
           ),
           const SizedBox(height: 12),
-          Text(companyName,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600)),
+          Text(
+            companyName,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 6),
           Text(email, style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 2),
           Text(phone, style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 30),
+
           _buildTile(
             icon: Icons.edit,
             title: 'Edit Profile',
@@ -112,6 +123,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                       CompanyEditProfilePage(profile: _profile ?? {}),
                 ),
               );
+
               if (result == true && mounted) {
                 await _refreshProfile();
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -123,6 +135,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
               }
             },
           ),
+
           _buildTile(
             icon: Icons.lock,
             title: 'Change Password',
@@ -135,6 +148,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
               );
             },
           ),
+
           _buildTile(
             icon: Icons.account_balance_wallet_outlined,
             title: 'Wallet',
@@ -147,10 +161,12 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
               );
             },
           ),
+
+          // ✅ WORKING LOGOUT
           _buildTile(
             icon: Icons.logout,
             title: 'Logout',
-            onTap: widget.onLogout,
+            onTap: _logout,
           ),
         ],
       ),

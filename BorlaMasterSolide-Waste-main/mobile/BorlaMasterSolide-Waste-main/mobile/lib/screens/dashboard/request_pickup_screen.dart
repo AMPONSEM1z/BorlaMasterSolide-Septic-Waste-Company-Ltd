@@ -105,8 +105,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
             onPrimary: Colors.white,
             surface: Color(0xFF1E1E1E),
             onSurface: Colors.white,
-          ),
-          dialogBackgroundColor: const Color(0xFF121212),
+          ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF121212)),
         ),
         child: child!,
       ),
@@ -230,7 +229,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
 
               // Waste Type
               DropdownButtonFormField<String>(
-                value: _selectedWasteType,
+                initialValue: _selectedWasteType,
                 dropdownColor: const Color(0xFF1E1E1E),
                 decoration: const InputDecoration(
                   labelText: 'Waste Type',
@@ -292,7 +291,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
 
               if (_selectedWasteType == 'Septic Tank')
                 DropdownButtonFormField<String>(
-                  value: _septicSize,
+                  initialValue: _septicSize,
                   dropdownColor: const Color(0xFF1E1E1E),
                   decoration: const InputDecoration(
                     labelText: 'Tank Size',
@@ -333,7 +332,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
 
               // Region
               DropdownButtonFormField<String>(
-                value: _selectedRegion,
+                initialValue: _selectedRegion,
                 dropdownColor: const Color(0xFF1E1E1E),
                 decoration: const InputDecoration(
                   labelText: 'Region',
@@ -367,7 +366,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
 
               // Town
               DropdownButtonFormField<String>(
-                value: _selectedTown,
+                initialValue: _selectedTown,
                 dropdownColor: const Color(0xFF1E1E1E),
                 decoration: const InputDecoration(
                   labelText: 'Town',

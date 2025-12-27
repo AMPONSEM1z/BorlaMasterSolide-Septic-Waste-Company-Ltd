@@ -29,29 +29,25 @@ class _SubscriptionsPageState extends State<SubscriptionsPage> {
     try {
       final res = await supabase.from('companies').select();
 
-      if (res is List) {
-        var list = res.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
+      var list = res.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map)).toList();
 
-        // Filter by subscription status
-        if (subscriptionFilter != null && subscriptionFilter!.isNotEmpty) {
-          list = list.where((c) => (c['subscription_status'] ?? '').toLowerCase() == subscriptionFilter!.toLowerCase()).toList();
-        }
-
-        // Search filter
-        final queryText = _searchController.text.trim().toLowerCase();
-        if (queryText.isNotEmpty) {
-          list = list.where((c) {
-            final name = (c['company_name'] ?? '').toString().toLowerCase();
-            final email = (c['contact_email'] ?? '').toString().toLowerCase();
-            return name.contains(queryText) || email.contains(queryText);
-          }).toList();
-        }
-
-        setState(() => companies = list);
-      } else {
-        setState(() => companies = []);
+      // Filter by subscription status
+      if (subscriptionFilter != null && subscriptionFilter!.isNotEmpty) {
+        list = list.where((c) => (c['subscription_status'] ?? '').toLowerCase() == subscriptionFilter!.toLowerCase()).toList();
       }
-    } catch (e) {
+
+      // Search filter
+      final queryText = _searchController.text.trim().toLowerCase();
+      if (queryText.isNotEmpty) {
+        list = list.where((c) {
+          final name = (c['company_name'] ?? '').toString().toLowerCase();
+          final email = (c['contact_email'] ?? '').toString().toLowerCase();
+          return name.contains(queryText) || email.contains(queryText);
+        }).toList();
+      }
+
+      setState(() => companies = list);
+        } catch (e) {
       debugPrint('Error loading companies: $e');
       setState(() => companies = []);
     } finally {
@@ -161,10 +157,10 @@ class _SubscriptionsPageState extends State<SubscriptionsPage> {
               child: loading
                   ? const Center(child: CircularProgressIndicator(color: Colors.redAccent))
                   : companies.isEmpty
-                      ? Center(
+                      ? const Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
-                            children: const [
+                            children: [
                               Icon(Icons.business_outlined, color: Colors.white24, size: 42),
                               SizedBox(height: 8),
                               Text('No companies found', style: TextStyle(color: Colors.white70)),
@@ -183,7 +179,7 @@ class _SubscriptionsPageState extends State<SubscriptionsPage> {
                                 subtitle: Text('Subscription: ${subscription.toString().toUpperCase()}', style: const TextStyle(color: Colors.white70)),
                                 trailing: Switch(
                                   value: subscription == 'active',
-                                  activeColor: Colors.greenAccent,
+                                  activeThumbColor: Colors.greenAccent,
                                   onChanged: actionLoading ? null : (v) => _toggleSubscription(c, v),
                                 ),
                               ),

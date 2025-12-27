@@ -44,11 +44,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
-              decoration: const BoxDecoration(color: Colors.blueAccent),
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blueAccent),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     "Admin Panel",
                     style: TextStyle(

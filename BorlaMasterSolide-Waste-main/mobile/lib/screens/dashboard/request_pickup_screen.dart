@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:borlamaster/services/booking_service.dart';
 
-
 class RequestPickupScreen extends StatefulWidget {
   const RequestPickupScreen({super.key});
 
@@ -66,20 +65,29 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
         _selectedRegion == null ||
         _selectedTown == null) {
       setState(() => _selectedCompany = null);
+      _calculatedPrice = null; // 🔑 ADD THIS
       return;
     }
 
     try {
+      // 🔑 Normalize waste type to match DB values
+      final companyType =
+          _selectedWasteType == 'Solid Waste' ? 'solid' : 'septic';
+
       final res = await supabase
           .from('companies')
           .select()
-          .eq('company_type', _selectedWasteType!)
+          .eq('service_type', companyType) // ✅ FIXED
           .contains('regions_served', [_selectedRegion!]).contains(
               'towns_served', [_selectedTown!]).limit(1);
 
       final companies = List<Map<String, dynamic>>.from(res);
       if (companies.isNotEmpty) {
-        setState(() => _selectedCompany = companies.first);
+        setState(() {
+          _selectedCompany = companies.first;
+          _calculatedPrice = null; // 🔑 clear old cached price
+        });
+        _calculatePrice();
       } else {
         setState(() => _selectedCompany = null);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -105,7 +113,10 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
             onPrimary: Colors.white,
             surface: Color(0xFF1E1E1E),
             onSurface: Colors.white,
-          ), dialogTheme: DialogThemeData(backgroundColor: const Color(0xFF121212)),
+          ),
+          dialogTheme: const DialogThemeData(
+            backgroundColor: Color(0xFF121212),
+          ),
         ),
         child: child!,
       ),
@@ -114,33 +125,51 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
     if (picked != null) setState(() => _pickupDate = picked);
   }
 
-  // Real-time validation & price calculation
   void _calculatePrice() {
+    if (_selectedCompany == null) {
+      setState(() => _calculatedPrice = null);
+      return;
+    }
+
+    final pricing = _selectedCompany!['pricing'];
+    if (pricing == null || pricing is! Map) {
+      setState(() => _calculatedPrice = null);
+      return;
+    }
+
     double? price;
 
-    if (_selectedWasteType == 'Solid Waste' && _solidWasteWeight != null) {
+    // ===== SOLID WASTE =====
+    if (_selectedWasteType == 'Solid Waste' &&
+        _solidWasteWeight != null &&
+        pricing['solid_waste'] != null) {
       final weight = double.tryParse(_solidWasteWeight!);
-      if (weight == null || weight <= 0) {
-        price = null;
-      } else if (weight < 10) {
-        price = 100;
-      } else if (weight <= 15) {
-        price = 300;
-      } else if (weight <= 30) {
-        price = 500;
-      } else if (weight > 50) {
-        price = 1000;
-      } else {
-        price = 0;
+      if (weight != null && weight > 0) {
+        final rules = pricing['solid_waste']['rules'];
+        if (rules is! List) return;
+
+        for (final rule in rules) {
+          final min = (rule['min'] as num).toDouble();
+          final max = (rule['max'] as num).toDouble();
+          final rulePrice = (rule['price'] as num).toDouble();
+
+          if (weight >= min && weight <= max) {
+            price = rulePrice;
+            break;
+          }
+        }
       }
-    } else if (_selectedWasteType == 'Septic Tank' && _septicSize != null) {
+    }
+
+    // ===== SEPTIC TANK =====
+    if (_selectedWasteType == 'Septic Tank' &&
+        _septicSize != null &&
+        pricing['septic_tank'] != null) {
       if (_septicSize == 'Small') {
-        price = 400;
+        price = (pricing['septic_tank']['small'] as num?)?.toDouble();
       } else if (_septicSize == 'Large') {
-        price = 900;
+        price = (pricing['septic_tank']['large'] as num?)?.toDouble();
       }
-    } else {
-      price = null;
     }
 
     setState(() => _calculatedPrice = price);
@@ -152,9 +181,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
         _selectedTown != null &&
         _selectedWasteType != null &&
         _pickupDate != null &&
-        _selectedCompany != null &&
-        _calculatedPrice != null &&
-        _calculatedPrice! > 0;
+        _selectedCompany != null;
   }
 
   Future<void> _submitRequest() async {
@@ -165,39 +192,35 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
       return;
     }
 
+    if (_calculatedPrice == null || _calculatedPrice! <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Company pricing not available')),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {
-      final user = supabase.auth.currentUser;
-      if (user == null) throw Exception('User not logged in');
-       // ✅ fetch customer ID
-    final customer = await supabase
-        .from('customers')
-        .select('id')
-        .eq('auth_user_id', user.id)
-        .single();
-    final customerId = customer['id'];
-
       String wasteDetail = _selectedWasteType == 'Solid Waste'
           ? '$_solidWasteWeight kg'
           : _septicSize ?? '';
 
-     await BookingService.createBooking(
-  // customerId: customerId,
-  wasteType: _selectedWasteType!,
-  region: _selectedRegion!,
-  town: _selectedTown!,
-  companyId: _selectedCompany!['id'],
-  pickupDate: _pickupDate!,
-  wasteDetail: wasteDetail,
-  amountDue: _calculatedPrice!,
-);
-
+      await BookingService.createBooking(
+        wasteType: _selectedWasteType!,
+        region: _selectedRegion!,
+        town: _selectedTown!,
+        companyId: _selectedCompany!['id'],
+        pickupDate: _pickupDate!,
+        wasteDetail: wasteDetail,
+        amountDue: _calculatedPrice!,
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                'Pickup request sent successfully! Price: GHS ${_calculatedPrice!.toStringAsFixed(2)}')),
+          content: Text(
+              'Pickup request sent successfully! Price: GHS ${_calculatedPrice!.toStringAsFixed(2)}'),
+        ),
       );
 
       Navigator.pop(context);
@@ -229,7 +252,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
 
               // Waste Type
               DropdownButtonFormField<String>(
-                initialValue: _selectedWasteType,
+                value: _selectedWasteType,
                 dropdownColor: const Color(0xFF1E1E1E),
                 decoration: const InputDecoration(
                   labelText: 'Waste Type',
@@ -291,7 +314,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
 
               if (_selectedWasteType == 'Septic Tank')
                 DropdownButtonFormField<String>(
-                  initialValue: _septicSize,
+                  value: _septicSize,
                   dropdownColor: const Color(0xFF1E1E1E),
                   decoration: const InputDecoration(
                     labelText: 'Tank Size',
@@ -332,7 +355,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
 
               // Region
               DropdownButtonFormField<String>(
-                initialValue: _selectedRegion,
+                value: _selectedRegion,
                 dropdownColor: const Color(0xFF1E1E1E),
                 decoration: const InputDecoration(
                   labelText: 'Region',
@@ -353,9 +376,10 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
                     _selectedRegion = val;
                     _selectedTown = null;
                     _towns = [];
+                    _selectedCompany = null;
+                    _calculatedPrice = null;
                   });
                   if (val != null) _loadTowns(val);
-                  _loadCompanyForLocation();
                 },
                 validator: (value) =>
                     value == null ? 'Please select region' : null,
@@ -366,7 +390,7 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
 
               // Town
               DropdownButtonFormField<String>(
-                initialValue: _selectedTown,
+                value: _selectedTown,
                 dropdownColor: const Color(0xFF1E1E1E),
                 decoration: const InputDecoration(
                   labelText: 'Town',
@@ -431,7 +455,20 @@ class _RequestPickupScreenState extends State<RequestPickupScreen> {
               _loading
                   ? const CircularProgressIndicator(color: Colors.redAccent)
                   : ElevatedButton(
-                      onPressed: _isFormValid() ? _submitRequest : null,
+                      onPressed: _isFormValid()
+                          ? () {
+                              if (_calculatedPrice == null ||
+                                  _calculatedPrice! <= 0) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Company pricing not available')),
+                                );
+                                return;
+                              }
+                              _submitRequest();
+                            }
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isFormValid()
                             ? Colors.redAccent

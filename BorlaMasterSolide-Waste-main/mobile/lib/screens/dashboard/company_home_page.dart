@@ -15,20 +15,20 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
   bool loading = true;
   bool saving = false;
 
-  String? selectedWasteType; // 'Solid Waste' or 'Septic Waste'
+  String? selectedService; // 'solid' or 'septic'
 
   // Controllers for Solid Waste
-  final Map<String, TextEditingController> solidControllers = {
-    '<10kg': TextEditingController(),
-    '10-15kg': TextEditingController(),
-    '15-30kg': TextEditingController(),
-    '50kg+': TextEditingController(),
-  };
+  final List<Map<String, dynamic>> solidRules = [
+    {'min': 0, 'max': 10, 'controller': TextEditingController()},
+    {'min': 10, 'max': 15, 'controller': TextEditingController()},
+    {'min': 15, 'max': 30, 'controller': TextEditingController()},
+    {'min': 50, 'max': 9999, 'controller': TextEditingController()},
+  ];
 
   // Controllers for Septic Waste
   final Map<String, TextEditingController> septicControllers = {
-    'Small': TextEditingController(),
-    'Large': TextEditingController(),
+    'small': TextEditingController(),
+    'large': TextEditingController(),
   };
 
   @override
@@ -44,13 +44,16 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     return 'Good Evening';
   }
 
+  /// Load company profile and pricing
   Future<void> _loadProfileAndPricing() async {
     setState(() => loading = true);
     final user = supabase.auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      setState(() => loading = false);
+      return;
+    }
 
     try {
-      // Fetch company profile
       final data = await supabase
           .from('companies')
           .select()
@@ -60,18 +63,28 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
       if (data != null) {
         profile = Map<String, dynamic>.from(data);
 
-        // Load existing pricing
+        // Load selected service type
+        selectedService = profile?['service_type'];
+
+        // Load pricing JSON
         final pricing = profile?['pricing'] ?? {};
+
         // Solid Waste
-        final solid = pricing['solid_waste'] ?? {};
-        solidControllers.forEach((key, controller) {
-          controller.text = solid[key]?.toString() ?? '';
-        });
+        if (pricing['solid_waste']?['rules'] != null) {
+          final rules = pricing['solid_waste']['rules'] as List;
+          for (int i = 0; i < solidRules.length && i < rules.length; i++) {
+            solidRules[i]['controller'].text =
+                rules[i]['price']?.toString() ?? '';
+          }
+        }
+
         // Septic Waste
-        final septic = pricing['septic_waste'] ?? {};
-        septicControllers.forEach((key, controller) {
-          controller.text = septic[key]?.toString() ?? '';
-        });
+        if (pricing['septic_tank'] != null) {
+          final septic = pricing['septic_tank'] as Map;
+          septicControllers.forEach((key, controller) {
+            controller.text = septic[key]?.toString() ?? '';
+          });
+        }
       }
     } catch (e) {
       debugPrint('Error loading profile/pricing: $e');
@@ -80,27 +93,70 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     }
   }
 
+  /// Save pricing to Supabase
   Future<void> _savePricing() async {
+    if (selectedService == null) return;
+
     setState(() => saving = true);
 
-    final solidPricing = <String, int>{};
-    solidControllers.forEach((key, controller) {
-      solidPricing[key] = int.tryParse(controller.text) ?? 0;
-    });
+    final Map<String, dynamic> pricing =
+        Map<String, dynamic>.from(profile?['pricing'] ?? {});
+    // 🔐 VALIDATION — ADD THIS BLOCK
+    if (selectedService == 'solid') {
+      final hasValidPrice = solidRules.any(
+        (rule) => (int.tryParse(rule['controller'].text) ?? 0) > 0,
+      );
 
-    final septicPricing = <String, int>{};
-    septicControllers.forEach((key, controller) {
-      septicPricing[key] = int.tryParse(controller.text) ?? 0;
-    });
+      if (!hasValidPrice) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Enter at least one solid waste price'),
+          ),
+        );
+        setState(() => saving = false);
+        return;
+      }
+    }
 
-    final pricing = {
-      'solid_waste': solidPricing,
-      'septic_waste': septicPricing,
-    };
+    if (selectedService == 'septic') {
+      final hasValidPrice = septicControllers.values.any(
+        (controller) => (int.tryParse(controller.text) ?? 0) > 0,
+      );
+
+      if (!hasValidPrice) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Enter septic pricing'),
+          ),
+        );
+        setState(() => saving = false);
+        return;
+      }
+    }
+
+    if (selectedService == 'solid') {
+      pricing['solid_waste'] = {
+        'rules': solidRules.map((rule) {
+          return {
+            'min': rule['min'],
+            'max': rule['max'],
+            'price': int.tryParse(rule['controller'].text) ?? 0,
+          };
+        }).toList(),
+      };
+    } else if (selectedService == 'septic') {
+      final septicPricing = <String, int>{};
+      septicControllers.forEach((key, controller) {
+        septicPricing[key] = int.tryParse(controller.text) ?? 0;
+      });
+      pricing['septic_tank'] = septicPricing;
+    }
 
     try {
-      await supabase.from('companies').update({'pricing': pricing}).eq(
-          'auth_user_id', supabase.auth.currentUser!.id);
+      await supabase.from('companies').update({
+        'service_type': selectedService,
+        'pricing': pricing,
+      }).eq('auth_user_id', supabase.auth.currentUser!.id);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pricing saved successfully')),
@@ -115,13 +171,9 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
   }
 
   Widget _buildPricingFields() {
-    if (selectedWasteType == 'Solid Waste') {
-      return _buildSolidWasteSection();
-    } else if (selectedWasteType == 'Septic Waste') {
-      return _buildSepticWasteSection();
-    } else {
-      return const SizedBox.shrink();
-    }
+    if (selectedService == 'solid') return _buildSolidWasteSection();
+    if (selectedService == 'septic') return _buildSepticWasteSection();
+    return const SizedBox.shrink();
   }
 
   Widget _buildSolidWasteSection() {
@@ -134,26 +186,25 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Solid Waste Pricing',
-                style: TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
+            const Text(
+              'Solid Waste Pricing',
+              style: TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
-            ...solidControllers.entries.map((entry) {
+            ...solidRules.map((rule) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: TextField(
-                  controller: entry.value,
+                  controller: rule['controller'],
                   keyboardType: TextInputType.number,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    labelText: '${entry.key} (GHS)',
-                    labelStyle: const TextStyle(color: Colors.white70),
+                    labelText: '${rule['min']} - ${rule['max']} kg (GHS)',
                     filled: true,
                     fillColor: Colors.grey[850],
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8)),
                   ),
                 ),
               );
@@ -164,7 +215,15 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
     );
   }
 
-  Widget _buildSepticWasteSection() {
+  Widget _buildSepticWasteSection() => _pricingCard(
+        title: 'Septic Waste Pricing',
+        controllers: septicControllers,
+      );
+
+  Widget _pricingCard({
+    required String title,
+    required Map<String, TextEditingController> controllers,
+  }) {
     return Card(
       color: Colors.grey[900],
       margin: const EdgeInsets.symmetric(vertical: 12),
@@ -174,13 +233,15 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Septic Waste Pricing',
-                style: TextStyle(
-                    color: Colors.redAccent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: const TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
-            ...septicControllers.entries.map((entry) {
+            ...controllers.entries.map((entry) {
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: TextField(
@@ -210,7 +271,8 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
       backgroundColor: const Color(0xFF121212),
       body: loading
           ? const Center(
-              child: CircularProgressIndicator(color: Colors.redAccent))
+              child: CircularProgressIndicator(color: Colors.redAccent),
+            )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -225,7 +287,7 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    'Select Waste Type:',
+                    'Select Service Type:',
                     style: TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                   const SizedBox(height: 8),
@@ -235,29 +297,29 @@ class _CompanyHomePageState extends State<CompanyHomePage> {
                         color: Colors.grey[850],
                         borderRadius: BorderRadius.circular(8)),
                     child: DropdownButton<String>(
-                      value: selectedWasteType,
+                      value: selectedService,
                       dropdownColor: Colors.grey[850],
-                      hint: const Text('Choose Waste Type',
+                      hint: const Text('Choose Service',
                           style: TextStyle(color: Colors.white70)),
                       isExpanded: true,
                       underline: const SizedBox(),
                       iconEnabledColor: Colors.redAccent,
                       onChanged: (val) {
                         setState(() {
-                          selectedWasteType = val;
+                          selectedService = val;
                         });
                       },
                       items: const [
                         DropdownMenuItem(
-                            value: 'Solid Waste', child: Text('Solid Waste')),
+                            value: 'solid', child: Text('Solid Waste')),
                         DropdownMenuItem(
-                            value: 'Septic Waste', child: Text('Septic Waste')),
+                            value: 'septic', child: Text('Septic Waste')),
                       ],
                     ),
                   ),
                   const SizedBox(height: 20),
                   _buildPricingFields(),
-                  if (selectedWasteType != null)
+                  if (selectedService != null)
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(

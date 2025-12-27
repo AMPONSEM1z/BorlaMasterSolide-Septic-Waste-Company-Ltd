@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 final supabase = Supabase.instance.client;
 
 class BookingService {
-
   // ================================================================
   // ✅ Create a new booking (customer auto-resolved)
   // ================================================================
@@ -15,7 +14,7 @@ class BookingService {
     String? companyId, // optional
     required DateTime pickupDate,
     required String wasteDetail,
-    required double amountDue,
+    required double amountDue, // <-- this is the updated price
   }) async {
     try {
       final user = supabase.auth.currentUser;
@@ -37,25 +36,21 @@ class BookingService {
       final String customerId = customerResponse['id'];
       print("Resolved CUSTOMER ID (UUID): $customerId");
 
-      // 2️⃣ Insert booking with correct UUID
-      final insertResponse = await supabase
-          .from('bookings')
-          .insert({
-            'customer_id': customerId,
-            'waste_type': wasteType,
-            'region': region,
-            'town': town,
-            'company_id': companyId,
-            'pickup_date': pickupDate.toIso8601String(),
-            'waste_detail': wasteDetail,
-            'amount_due': amountDue,
-            'status': 'pending_company_accept',
-            'created_at': DateTime.now().toIso8601String(),
-          })
-          .select();
+      // 2️⃣ Insert booking with correct UUID and updated amount
+      final insertResponse = await supabase.from('bookings').insert({
+        'customer_id': customerId,
+        'waste_type': wasteType,
+        'region': region,
+        'town': town,
+        'company_id': companyId,
+        'pickup_date': pickupDate.toIso8601String(),
+        'waste_detail': wasteDetail,
+        'amount_due': amountDue, // <-- updated price
+        'status': 'pending_company_accept',
+        'created_at': DateTime.now().toIso8601String(),
+      }).select();
 
       print('Booking created successfully: $insertResponse');
-
     } catch (e) {
       print('❌ Error creating booking: $e');
       throw Exception('Failed to create booking: $e');
@@ -101,7 +96,6 @@ class BookingService {
       }
 
       return bookings;
-
     } catch (e) {
       print('❌ Error fetching bookings: $e');
       throw Exception('Failed to fetch bookings: $e');
@@ -116,12 +110,10 @@ class BookingService {
     try {
       final response = await supabase
           .from('bookings')
-          .update({'status': status})
-          .eq('id', bookingId);
+          .update({'status': status}).eq('id', bookingId);
 
       print('Booking $bookingId updated to status: $status');
       print('Response: $response');
-
     } catch (e) {
       print('❌ Error updating booking status: $e');
       throw Exception('Failed to update booking status: $e');
@@ -138,7 +130,6 @@ class BookingService {
 
       print('Booking $bookingId deleted');
       print('Response: $response');
-
     } catch (e) {
       print('❌ Error deleting booking: $e');
       throw Exception('Failed to delete booking: $e');

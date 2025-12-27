@@ -46,7 +46,6 @@ class MyApp extends StatelessWidget {
           primary: Colors.greenAccent.shade400,
           secondary: Colors.green.shade600,
           surface: const Color(0xFF121212),
-          background: const Color(0xFF0E0E0E),
         ),
         scaffoldBackgroundColor: const Color(0xFF121212),
         textTheme: baseTextTheme.apply(
